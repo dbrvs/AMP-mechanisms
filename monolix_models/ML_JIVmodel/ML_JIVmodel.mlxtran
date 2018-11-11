@@ -1,0 +1,87 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../../data/robb-scrape/wpd_all.csv'
+delimiter = comma
+header = {colorID, days, log10VL, data, uniqueID, id_var}
+
+[CONTENT]
+days = {use=time}
+log10VL = {use=observation, name=log10VL, type=continuous}
+id_var = {use=identifier}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {ldS_pop, omega_ldS, ltau_pop, omega_ltau, lk_pop, omega_lk, lw_pop, omega_lw, ldE_pop, omega_ldE, lE50_pop, omega_lE50, initT_pop, omega_initT, corr_ltau_ldS, corr_lk_ldS, corr_ltau_lk, corr_lw_ldS, corr_lw_lk, corr_lw_ltau, corr_ldS_ldE, corr_lk_ldE, corr_ltau_ldE, corr_lw_ldE, corr_ldE_lE50, corr_ldS_lE50, corr_lk_lE50, corr_ltau_lE50, corr_lw_lE50, initV_pop, initAP_pop}
+
+DEFINITION:
+ldS = {distribution=normal, typical=ldS_pop, sd=omega_ldS}
+ltau = {distribution=normal, typical=ltau_pop, sd=omega_ltau}
+lk = {distribution=normal, typical=lk_pop, sd=omega_lk}
+lw = {distribution=normal, typical=lw_pop, sd=omega_lw}
+ldE = {distribution=normal, typical=ldE_pop, sd=omega_ldE}
+lE50 = {distribution=normal, typical=lE50_pop, sd=omega_lE50}
+initT = {distribution=normal, typical=initT_pop, sd=omega_initT}
+initV = {distribution=normal, typical=initV_pop, no-variability}
+initAP = {distribution=normal, typical=initAP_pop, no-variability}
+correlation = {level=id, r(ldE, lE50)=corr_ldE_lE50, r(ldS, lE50)=corr_ldS_lE50, r(lk, lE50)=corr_lk_lE50, r(ltau, lE50)=corr_ltau_lE50, r(lw, lE50)=corr_lw_lE50, r(ldS, ldE)=corr_ldS_ldE, r(lk, ldE)=corr_lk_ldE, r(ltau, ldE)=corr_ltau_ldE, r(lw, ldE)=corr_lw_ldE, r(lk, ldS)=corr_lk_ldS, r(ltau, ldS)=corr_ltau_ldS, r(lw, ldS)=corr_lw_ldS, r(ltau, lk)=corr_ltau_lk, r(lw, lk)=corr_lw_lk, r(lw, ltau)=corr_lw_ltau}
+
+[LONGITUDINAL]
+input = {a}
+file = 'jivmod.txt'
+
+DEFINITION:
+log10VL = {distribution=normal, prediction=Vout, errorModel=constant(a)}
+
+<FIT>
+data = log10VL
+model = log10VL
+
+<PARAMETER>
+a = {value=0.5942469374875061, method=MLE}
+corr_ldE_lE50 = {value=0, method=MLE}
+corr_ldS_lE50 = {value=0, method=MLE}
+corr_ldS_ldE = {value=0, method=MLE}
+corr_lk_lE50 = {value=0, method=MLE}
+corr_lk_ldE = {value=0, method=MLE}
+corr_lk_ldS = {value=0, method=MLE}
+corr_ltau_lE50 = {value=0, method=MLE}
+corr_ltau_ldE = {value=0, method=MLE}
+corr_ltau_ldS = {value=0, method=MLE}
+corr_ltau_lk = {value=0, method=MLE}
+corr_lw_lE50 = {value=0, method=MLE}
+corr_lw_ldE = {value=0, method=MLE}
+corr_lw_ldS = {value=0, method=MLE}
+corr_lw_lk = {value=0, method=MLE}
+corr_lw_ltau = {value=0, method=MLE}
+initAP_pop = {value=1, method=FIXED}
+initT_pop = {value=1.03297, method=MLE}
+initV_pop = {value=0.001, method=FIXED}
+lE50_pop = {value=2.06322, method=MLE}
+ldE_pop = {value=-6.73858, method=MLE}
+ldS_pop = {value=-0.4857167, method=MLE}
+lk_pop = {value=5.10537, method=MLE}
+ltau_pop = {value=-3.922, method=MLE}
+lw_pop = {value=-0.08337377, method=MLE}
+omega_initT = {value=0.6269979004109971, method=MLE}
+omega_lE50 = {value=0.4320464066000288, method=MLE}
+omega_ldE = {value=0.375646944634252, method=MLE}
+omega_ldS = {value=0.3876077666590812, method=MLE}
+omega_lk = {value=0.554694769025547, method=MLE}
+omega_ltau = {value=0.1884448645354382, method=MLE}
+omega_lw = {value=0.4093908046986793, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(run = false,method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'ML_JIVmodel'
+
