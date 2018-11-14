@@ -1,0 +1,94 @@
+---
+title: "Tidy HIV viral load data"
+author: "Bryan Mayer"
+date: "11/2/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load the data
+
+```{r load_data}
+
+thai_header = read.csv("wpd_thai.csv", nrows = 1, header = F, stringsAsFactors = F)[1,] %>%
+  unlist(., use.names=FALSE) %>%
+  na.omit()
+
+africa_header = read.csv("wpd_africa.csv", nrows = 1, header = F, stringsAsFactors = F)[1,] %>%
+  unlist(., use.names=FALSE) %>%
+  na.omit()
+
+thai_dat = read_csv("wpd_thai.csv", skip = 1)
+africa_dat = read_csv("wpd_africa.csv", skip = 1)
+
+```
+
+## Tidy the data
+
+```{r tidy_data}
+
+process_data = function(data_in, header_dat){
+  
+  # set up a list for each pair of (X,Y)~(time,vl), and the color (id) variable from the header
+  data_sets = data_frame(
+    time_var = names(data_in)[grepl("X", names(data_in))],
+    vl_var = names(data_in)[grepl("Y", names(data_in))],
+    colorID = header_dat
+  )
+  
+  # go through each id, select their (X,Y)~(time,vl) pair of data and stack them using
+  # informative names
+  data_sets %>% group_by(colorID) %>%
+    do(pmap_df(., ~data_frame(days = data_in[[.x]], log10VL = data_in[[.y]]))) %>%
+    drop_na
+  
+}
+
+thai_long = process_data(thai_dat, thai_header) 
+africa_long  = process_data(africa_dat, africa_header)
+
+```
+
+
+## Plot for confirmation
+
+```{r}
+
+ggplot(thai_long, aes(x = days, y = log10VL)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~colorID) +
+  ggtitle("Thai data")
+
+```
+
+
+
+```{r}
+ggplot(africa_long, aes(x = days, y = log10VL)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~colorID) +
+  ggtitle("Africa data")
+
+```
+
+# Stack and save the data
+
+```{r}
+outdata = thai_long %>% mutate(data = "thai") %>%
+  bind_rows(africa_long %>% mutate(data = "africa")) %>%
+  ungroup() %>%
+  mutate(
+    uniqueID = paste0(data, colorID),
+    id_var = as.integer(factor(uniqueID))
+    ) 
+
+write_csv(outdata, "wpd_all.csv")
+write_csv(subset(outdata, days < 7 * 10), "wpd_all_10wks.csv")
+
+```
