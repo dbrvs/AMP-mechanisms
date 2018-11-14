@@ -1,7 +1,7 @@
 <DATAFILE>
 
 [FILEINFO]
-file = '../../data/robb-scrape/wpd_all.csv'
+file = '../../data/robb-scrape/wpd_all_10wks.csv'
 delimiter = comma
 header = {colorID, days, log10VL, data, uniqueID, id_var}
 
@@ -29,6 +29,7 @@ correlation = {level=id, r(ldE, lE50)=corr_ldE_lE50, r(ldS, lE50)=corr_ldS_lE50,
 
 [LONGITUDINAL]
 input = {a}
+
 file = 'jivmod.txt'
 
 DEFINITION:
