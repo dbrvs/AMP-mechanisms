@@ -85,7 +85,8 @@ outdata = thai_long %>% mutate(data = "thai") %>%
   ungroup() %>%
   mutate(
     uniqueID = paste0(data, colorID),
-    id_var = as.integer(factor(uniqueID))
+    id_var = as.integer(factor(uniqueID)),
+    VL = 10^log10VL
     ) 
 
 write_csv(outdata, "wpd_all.csv")
