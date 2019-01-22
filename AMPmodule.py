@@ -198,9 +198,9 @@ class trial:
         self.A0=A0; self.iv_phi=iv_phi; self.maxIC50=maxIC50 #variables for sensitivity analysis
 
         #import parameters and update for sensitivity
-        self.VD=np.array(pd.DataFrame.from_csv('data/viral_dynamics.csv'))
+        self.VD=np.array(pd.DataFrame.read_csv('data/viral_dynamics.csv'))
         if dose!=0:
-            self.PK=np.array(pd.DataFrame.from_csv('data/PK'+str(self.dose)+'.csv'))
+            self.PK=np.array(pd.DataFrame.read_csv('data/PK'+str(self.dose)+'.csv'))
 
             if clade=='bimodal':
                 #pick 1000 strains, rfrac of which are resistant, i.e. ic50 is high, >50
@@ -215,7 +215,7 @@ class trial:
                 PD[PD<0]=1 #just to double check
                 PD[:,0]=IC2
             else:
-                PD=np.array(pd.DataFrame.from_csv('data/PD'+self.clade+'.csv'))
+                PD=np.array(pd.DataFrame.read_csv('data/PD'+self.clade+'.csv'))
                                 
             #update PD for sensitivity
             if self.maxIC50 > 50:
