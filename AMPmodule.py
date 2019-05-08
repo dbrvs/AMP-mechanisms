@@ -6,9 +6,11 @@
 #diversity model!
 #bias and precision of timing
 #incomplete neutralization instead of max IC50?
+#remove aL and ksi
 
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
+from pandas import read_csv
 
 #class to keep information about a single participant
 class participant:
@@ -82,9 +84,9 @@ class participant:
 
     #calculate Ab model at any time (note dosing interval mod)
     def ab_sim(self,t):
-        Y_t = self.Y1*np.exp(-self.k1*(t%self.dose_interval))+self.Y2*np.exp(-self.k2*(t%self.dose_interval))
-        I_t = 1/(1+(self.IC50/Y_t)**self.h)
-        return Y_t,I_t    
+        Y_t = self.Y1*np.exp(-self.k1*(t%self.dose_interval))+self.Y2*np.exp(-self.k2*(t%self.dose_interval)) #VRC01 concentration
+        nu_t = 1/(1+(self.IC50/Y_t)**self.h) #neutralization
+        return Y_t,nu_t
     
     #function that updates stochastic rates/transitions
     def update_rates(self, ti, xi):
@@ -96,7 +98,7 @@ class participant:
         Y1,k1,Y2,k2=pkp
         IC50,h=pdp 
 
-        Y_t,I_t=self.ab_sim(ti); Bt=Bt0*(1-I_t) #recalculate infectivity based on bnabs
+        Y_t,nu_t=self.ab_sim(ti); Bt=Bt0*(1-nu_t) #recalculate infectivity based on bnabs
         
         pr=np.random.poisson(p) #burst size randomized a bit
 
@@ -198,9 +200,17 @@ class trial:
         self.A0=A0; self.iv_phi=iv_phi; self.maxIC50=maxIC50 #variables for sensitivity analysis
 
         #import parameters and update for sensitivity
+<<<<<<< HEAD
         self.VD=np.array(pd.DataFrame.read_csv('data/viral_dynamics.csv'))
         if dose!=0:
             self.PK=np.array(pd.DataFrame.read_csv('data/PK'+str(self.dose)+'.csv'))
+=======
+        self.VD=np.array(read_csv('data/viral_dynamics.csv',usecols=range(1,8)))
+
+        if dose!=0:
+            self.PK=np.array(read_csv('data/PK'+str(self.dose)+'.csv',usecols=range(1,5)))
+
+>>>>>>> monolix_modeling
 
             if clade=='bimodal':
                 #pick 1000 strains, rfrac of which are resistant, i.e. ic50 is high, >50
@@ -215,7 +225,11 @@ class trial:
                 PD[PD<0]=1 #just to double check
                 PD[:,0]=IC2
             else:
+<<<<<<< HEAD
                 PD=np.array(pd.DataFrame.read_csv('data/PD'+self.clade+'.csv'))
+=======
+                PD=np.array(read_csv('data/PD'+self.clade+'.csv',usecols=range(1,3)))
+>>>>>>> monolix_modeling
                                 
             #update PD for sensitivity
             if self.maxIC50 > 50:
@@ -285,4 +299,63 @@ class trial:
                     self.sim[0].append(t)
                     self.sim[1].append(np.log10(sol[:,6]/ppt.vol*1e3+1e-3))
 
-
+#function for plotting stochastic stuff
+def simplot(t,sol,tAb,ppt,fn):
+    
+    plt.figure(figsize=(9,5))
+    
+    plt.subplot(231)
+    plt.step(t/7,(sol[:,0]-sol[0,0])/sol[0,0]*100,lw=2,color='gray')
+    plt.xlabel('time (weeks)')
+    plt.ylabel('susceptible cells \n (% deviation from $S_0$)')
+    plt.xticks(ppt.obs_times[::2]/7)
+    plt.xlim([0,80])
+    
+    plt.subplot(232)
+    plt.step(t/7,sol[:,1]+sol[:,2],lw=2,where='post',color='tomato') #all infected
+    #plt.ylim([0,100])
+    plt.xlabel('time (weeks)')
+    plt.ylabel('total infected cells')
+    plt.xticks(ppt.obs_times[::2]/7)
+    plt.xlim([0,80])
+    
+    plt.subplot(233)
+    plt.step(t/7,(sol[:,3]+sol[:,4])/sol[0,0]*1e6,lw=2,color='navy') #divide by S0 (CD4+ T cells) and then multiply by 1 million
+    plt.step(t/7,sol[:,4]/sol[0,0]*1e6,lw=2,color='teal') #divide by S0 (CD4+ T cells) and then multiply by 1 million
+    plt.legend(['total','infectious'],fontsize=10)
+    plt.ylim([-1,150])
+    plt.xlabel('time (weeks)')
+    plt.ylabel('latent cells (per mil CD4+)')
+    plt.xticks(ppt.obs_times[::2]/7)
+    plt.xlim([0,80])
+    
+    plt.subplot(234)
+    plt.step(t/7,sol[:,5]*ppt.kap/ppt.dA,color='lawngreen',lw=2)
+    plt.xlabel('time (weeks)')
+    plt.ylabel('adaptive killing ratio ($\kappa E/\delta_I$)')
+    plt.xticks(ppt.obs_times[::2]/7)
+    plt.xlim([0,80])
+    
+    plt.subplot(235)
+    vll=np.log10(sol[:,6]/ppt.vol*1e3+1e-3)
+    plt.step(t/7,vll,lw=2,color='violet',alpha=0.7)
+    plt.scatter(ppt.obs_times/7,np.log10(ppt.obs+30),facecolors='none',edgecolors='k',s=40)
+    plt.axhline(np.log10(30),color='k',ls='--')
+    plt.ylim([0,9])
+    plt.xlabel('time (weeks)')
+    plt.ylabel('viral load log10(copies/mL)')
+    plt.xticks(ppt.obs_times[::2]/7)
+    plt.xlim([0,80])
+    
+    Y_t,I_t=ppt.ab_sim(tAb)
+    plt.subplot(236)
+    plt.plot(tAb/7,I_t*100,lw=2,color='k')
+    plt.ylim([0,100])
+    plt.xlabel('time (weeks)')
+    plt.ylabel('VRC01 neutralization (%)')
+    plt.xticks(ppt.obs_times[::2]/7)
+    plt.xlim([0,80])
+    
+    plt.tight_layout()
+    
+    plt.savefig('figures/'+fn+'.pdf',dpi=600)
